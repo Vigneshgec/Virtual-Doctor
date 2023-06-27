@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Virtual Doctor</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background: linear-gradient(45deg, #cec5d6, #c5ff74);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+      height: 100vh;
+      margin: -20px 0 50px;
+      overflow: hidden;
+    }
+    h1 {
+      color: #333;
+    }
+    .container {
+      margin: 0 auto;
+      padding: 20px;
+      padding: 50px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+      position: relative;
+      overflow: hidden;
+      width: 768px;
+      max-width: 600px;
+      min-height: 480px;
+    }
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    textarea {
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      background-color: #eee;
+      border: none;
+      padding: 12px 15px;
+      margin: 8px 0;
+      width: 100%;
+    }
+    .file-upload {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+    .file-upload input[type="file"] {
+      font-size: 14px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+    }
+    .file-upload label {
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    .file-upload label:hover {
+      background-color: #45a049;
+    }
+    button {
+      border-radius: 15px;
+      border: 1px solid #4caf50;
+      background-color: #4caf50;
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 12px 45px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: transform 80ms ease-in;
+    }
+    button:active {
+      transform: scale(0.95);
+    }
+    button:focus {
+      outline: none;
+    }
+    button.ghost {
+      background-color: transparent;
+      border-color: #FFFFFF;
+    }
+    #output {
+      margin-top: 20px;
+    }
+    .mid {
+      padding: 120px;
+    }
+    .button-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+    }
+    .file-info {
+      font-size: 14px;
+      margin-left: 10px;
+    }
+    .extracted-data {
+      margin-top: 20px;
+      font-size: 14px;
+      white-space: pre-line;
+    }
+    .appointment-button {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .appointment-link {
+      background-color: #2196f3;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+      text-decoration: none;
+    }
+    .appointment-link:hover {
+      background-color: #1976d2;
+    }
+  </style>
+</head>
+<body>
+  <div class="mid">
+    <div class="container">
+      <h1 align="center">Virtual Doctor</h1>
+      <form id="inputForm" enctype="multipart/form-data">
+        <label for="symptoms">Symptoms:</label>
+        <textarea id="symptoms" rows="4" placeholder="Enter your symptoms"></textarea>
+        <label for="file">Upload Medical Information:</label>
+        <div class="button-container">
+          <div class="file-upload">
+            <input type="file" id="file" name="file">
+            <label for="file">Choose File</label>
+          </div>
+          <button type="submit">Get Diagnosis</button>
+        </div>
+        <p id="fileInfo" class="file-info"></p>
+      </form>
+      <div id="output">
+        <h2>Diagnosis:</h2>
+        <ul id="diagnosis"></ul>
+        <h2>Recommendation:</h2>
+        <ul id="recommendation"></ul>
+        <h2>Health Score:</h2>
+        <p id="healthScore"></p>
+        <p id="alert"></p>  <!-- Alert for low health score -->
+        <div id="extractedData" class="extracted-data"></div>  <!-- Display extracted data from the image -->
+        <div id="appointmentButton" class="appointment-button"></div>  <!-- Display appointment button -->
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('inputForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      var userSymptoms = document.getElementById('symptoms').value;
+      var fileInput = document.getElementById('file');
+      var file = fileInput.files[0];
+      var formData = new FormData();
+      formData.append('symptoms', userSymptoms);
+      formData.append('file', file);
+  
+      // Do not send a request if no symptoms are entered and no file is uploaded
+      if (userSymptoms.trim() === '' && !file) {
+        alert('Please enter your symptoms or upload a file');
+        return;
+      }
+  
+      fetch('/diagnose', {
+        method: 'POST',
+        body: formData
+      })
+        .then(function(response) {
+          return response.json();
+        })
+        .then(function(data) {
+          document.getElementById('diagnosis').innerHTML = '';
+          document.getElementById('recommendation').innerHTML = '';
+          document.getElementById('alert').innerHTML = '';  // Clear previous alerts
+          document.getElementById('appointmentButton').innerHTML = '';  // Clear previous appointment button
+  
+          if (data.results) {
+            data.results.forEach(function(item) {
+              var symptom = item.symptom;
+              var diagnosis = item.diagnosis;
+              var recommendation = item.recommendation;
+  
+              var diagnosisItem = document.createElement('li');
+              diagnosisItem.textContent = diagnosis;
+              document.getElementById('diagnosis').appendChild(diagnosisItem);
+  
+              var recommendationItem = document.createElement('li');
+              recommendationItem.textContent = recommendation;
+              document.getElementById('recommendation').appendChild(recommendationItem);
+            });
+          }
+  
+          var healthPercentage = data.health_percentage;
+          document.getElementById('healthScore').textContent = 'Your Health Score is: ' + healthPercentage + '%';
+  
+          // Display an alert if the health score is below 80
+          if (healthPercentage < 80) {
+            document.getElementById('alert').textContent = 'Warning: Your health score is low. Please visit a nearby hospital or consult a doctor immediately.';
+            document.getElementById('alert').style.color = 'red';  // Make the alert text red
+  
+            // Display appointment button
+            var appointmentButton = document.createElement('a');
+            appointmentButton.href = '/make_appointment';
+            appointmentButton.textContent = 'Get Appointment';
+            appointmentButton.className = 'appointment-link';
+            document.getElementById('appointmentButton').appendChild(appointmentButton);
+          }
+  
+          // Display extracted data from the image
+          if (data.extracted_data) {
+            document.getElementById('extractedData').textContent = 'Extracted Data:\n' + data.extracted_data;
+          } else {
+            document.getElementById('extractedData').textContent = 'not found';
+          }
+        })
+        .catch(function(error) {
+          console.error('Error:', error);
+        });
+    });
+  
+    document.getElementById('file').addEventListener('change', function() {
+      var file = document.getElementById('file').files[0];
+      var fileInfo = document.getElementById('fileInfo');
+      if (file) {
+        fileInfo.textContent = 'Selected file: ' + file.name;
+      } else {
+        fileInfo.textContent = '';
+      }
+    });
+  </script>
+</body>
+</html>

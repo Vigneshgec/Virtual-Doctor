@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Web Page</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <style>
+    /* Custom CSS styling */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom, #8cc5ff, #e5c6b4); /* Added background gradient */
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    h1 {
+      text-align: center;
+    }
+
+    /* Navigation bar styling */
+    .navbar {
+      background-color: #343a40;
+      overflow: hidden;
+    }
+
+    .navbar a {
+      color: #fff;
+      text-align: center;
+      padding: 8px;
+      text-decoration: none;
+      font-size: 18px;
+    }
+
+    .navbar a:hover {
+      background-color: #aaa;
+      color: #fff;
+    }
+
+    /* Main content styling */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start; /* Align content at the top */
+      margin-top: 20vh; /* Adjust the top margin to center the content */
+    }
+
+    /* Doctor list styling */
+    .doctor-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start; /* Align doctors to the left side */
+      align-items: flex-start; /* Align doctors to the top */
+    }
+
+    .doctor-card {
+      background-color: #e9ecef;
+      padding: 20px;
+      border-radius: 5px;
+      margin: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Added shadow effect */
+      width: 300px;
+      text-align: left; /* Align text to the left side */
+      position: relative; /* Added position relative */
+      animation: fadeIn 1s ease-in-out; /* Added fadeIn animation */
+    }
+
+    .doctor-card h2 {
+      color: #333;
+      margin-top: 0; /* Remove top margin */
+    }
+
+    .doctor-card p {
+      color: #666;
+      margin-bottom: 10px; /* Add bottom margin */
+    }
+
+    .book-button {
+      background-color: #79a1cb;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute; /* Added position absolute */
+      bottom: -40px; /* Added bottom spacing */
+      left: 0; /* Aligned to the left side */
+      width: 100%; /* Full width */
+      transition: background-color 0.3s ease; /* Added transition effect */
+    }
+
+    .book-button:hover {
+      background-color: #037dff;
+    }
+
+    .book-button i {
+      margin-right: 5px;
+    }
+
+    /* Image and content section styling */
+    .image-content-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 50px;
+    }
+
+    .image-content-section .image-wrapper {
+      width: 200px;
+      height: 200px;
+      overflow: hidden;
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .image-content-section .image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .image-content-section .content-wrapper {
+      max-width: 500px;
+      padding: 0 20px;
+      text-align: center;
+    }
+
+    .image-content-section .content-wrapper h3 {
+      color: #333;
+      margin-top: 0;
+    }
+
+    .image-content-section .content-wrapper p {
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .image-content-section:hover .image-wrapper img {
+      transform: scale(1.1);
+    }
+
+    /* Footer styling */
+    .footer {
+      background-color: #343a40;
+      color: #fff;
+      padding: 8px;
+      text-align: center;
+      width: 100%;
+      flex-shrink: 0;
+    }
+    
+    /* Highlight effect on hover */
+    .doctor-card:hover {
+      box-shadow: 0 0 10px rgb(167, 236, 255); /* Change the box shadow to create a highlighting effect */
+      transform: translateY(-2px); /* Add a slight vertical pop-up effect */
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation bar -->
+  <nav class="navbar navbar-expand-md">
+    <div class="navbar-brand">
+      <img src="https://w7.pngwing.com/pngs/564/607/png-transparent-staff-of-hermes-caduceus-as-a-symbol-of-medicine-rod-of-asclepius-doctor-miscellaneous-text-people-thumbnail.png" alt="Logo" width="30" height="30"> <!-- Example image -->
+    </div>
+    <div class="collapse navbar-collapse justify-content-end">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="#"><i class="fas fa-home"></i> Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#"><i class="fas fa-chart-bar"></i> Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#"><i class="fas fa-user"></i> Profile</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <br>
+  <!-- Image and content section -->
+  <div class="image-content-section" style="margin-bottom: 20px;">
+    <div class="image-wrapper">
+      <img src="https://medcitynews.com/uploads/2017/08/GettyImages-691203150.jpg" alt="Image">
+    </div>
+    <div class="content-wrapper">
+      <h3>Welcome to Our Website</h3>
+      <p>Simplify your healthcare journey by scheduling virtual appointments with top-notch doctors</p>
+    </div>
+  </div>
+  
+  <!-- Main content -->
+  <div class="content">
+    <!-- Doctor list -->
+    <div class="doctor-list">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="doctor-card animate__animated animate__fadeIn">
+            <h2><i class="fas fa-user-md"></i> Dr. Vignesh</h2>
+            <p><strong>Specialty:</strong> Cardiology</p>
+            <p><strong>Availability:</strong> Mon, Wed, Fri</p>
+            <button class="book-button"><i class="fas fa-calendar-alt"></i> Book</button>
+          </div>
+        </div>
+      
+        <div class="col-md-3">
+          <div class="doctor-card animate__animated animate__fadeIn">
+            <h2><i class="fas fa-user-md"></i> Dr. Chiranjeevi</h2>
+            <p><strong>Specialty:</strong> Pediatrics</p>
+            <p><strong>Availability:</strong> Tue, Thu</p>
+            <button class="book-button"><i class="fas fa-calendar-alt"></i> Book</button>
+          </div>
+        </div>
+      
+        <div class="col-md-3">
+          <div class="doctor-card animate__animated animate__fadeIn">
+            <h2><i class="fas fa-user-md"></i> Dr. Manoj</h2>
+            <p><strong>Specialty:</strong> Dermatology</p>
+            <p><strong>Availability:</strong> Wed, Fri</p>
+            <button class="book-button"><i class="fas fa-calendar-alt"></i> Book</button>
+          </div>
+        </div>
+      
+        <div class="col-md-3">
+          <div class="doctor-card animate__animated animate__fadeIn">
+            <h2><i class="fas fa-user-md"></i> Dr. Kassi </h2>
+            <p><strong>Specialty:</strong> Mental Specialist</p>
+            <p><strong>Availability:</strong> Mon, Fri</p>
+            <button class="book-button"><i class="fas fa-calendar-alt"></i> Book</button>
+          </div>
+        </div>
+      </div>
+      <!-- Add more doctor cards as needed -->
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2023 My Web Page. All rights reserved.</p>
+  </footer>
+
+  <!-- JavaScript code to trigger animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-visible/1.2.0/jquery.visible.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      // Add bounceInDown animation to the h1 element
+      $("h1").addClass("animate__animated animate__bounceInDown");
+
+      // Add fadeIn animation to doctor cards when they become visible in the viewport
+      $(".doctor-card").each(function() {
+        $(this).addClass("animate__animated");
+      });
+
+      $(window).scroll(function(event) {
+        $(".doctor-card").each(function() {
+          if ($(this).visible(true)) {
+            $(this).addClass("animate__fadeIn");
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
