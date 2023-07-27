@@ -29,9 +29,9 @@
       box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
       position: relative;
       overflow: hidden;
-      width: 768px;
-      max-width: 600px;
-      min-height: 480px;
+      width: 850px;
+      max-width: 650px;
+      min-height: 500px;
     }
     label {
       display: block;
@@ -79,7 +79,7 @@
       color: #FFFFFF;
       font-size: 12px;
       font-weight: bold;
-      padding: 12px 45px;
+      padding: 10px 30px;
       letter-spacing: 1px;
       text-transform: uppercase;
       transition: transform 80ms ease-in;
@@ -141,18 +141,31 @@
   <div class="mid">
     <div class="container">
       <h1 align="center">Virtual Doctor</h1>
-      <form id="inputForm" enctype="multipart/form-data">
+      <form id="diagnosisForm" enctype="multipart/form-data">
         <label for="symptoms">Symptoms:</label>
         <textarea id="symptoms" rows="4" placeholder="Enter your symptoms"></textarea>
-        <label for="file">Upload Medical Information:</label>
+
+        <label for="file1">Upload Medical Information for Diagnosis:</label>
         <div class="button-container">
           <div class="file-upload">
-            <input type="file" id="file" name="file">
-            <label for="file">Choose File</label>
+            <input type="file" id="file1" name="file1">
+            <label for="file1">Choose File</label>
           </div>
-          <button type="submit">Get Diagnosis</button>
+          <button id="diagnoseButton" type="submit">Get Diagnosis</button>
         </div>
-        <p id="fileInfo" class="file-info"></p>
+        <div class="file-info" id="fileInfo"></div>
+      </form>
+
+      <form id="pneumoniaPredictionForm" enctype="multipart/form-data">
+        <label for="file2">Upload X-ray Image for Pneumonia Prediction:</label>
+        <div class="button-container">
+          <div class="file-upload">
+            <input type="file" id="file2" name="file2">
+            <label for="file2">Choose File</label>
+          </div>
+          <button id="predictPneumoniaButton" type="submit">Predict Pneumonia</button>
+        </div>
+        <div class="file-info" id="fileInfo"></div>
       </form>
       <div id="output">
         <h2>Diagnosis:</h2>
@@ -161,28 +174,32 @@
         <ul id="recommendation"></ul>
         <h2>Health Score:</h2>
         <p id="healthScore"></p>
-        <p id="alert"></p>  <!-- Alert for low health score -->
-        <div id="extractedData" class="extracted-data"></div>  <!-- Display extracted data from the image -->
-        <div id="appointmentButton" class="appointment-button"></div>  <!-- Display appointment button -->
+        <p id="alert"></p>
+        <div class="extracted-data" id="extractedData"></div>
+        <div id="appointmentButton" class="appointment-button"></div>
       </div>
     </div>
   </div>
   <script>
-    document.getElementById('inputForm').addEventListener('submit', function(event) {
-      event.preventDefault();
-      var userSymptoms = document.getElementById('symptoms').value;
-      var fileInput = document.getElementById('file');
-      var file = fileInput.files[0];
-      var formData = new FormData();
-      formData.append('symptoms', userSymptoms);
-      formData.append('file', file);
-  
+    document.getElementById('diagnosisForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    var userSymptoms = document.getElementById('symptoms').value;
+    var fileInput = document.getElementById('file1');
+    var file = fileInput.files[0];
+    var formData = new FormData();
+    formData.append('symptoms', userSymptoms);
+    formData.append('file', file)
+
       // Do not send a request if no symptoms are entered and no file is uploaded
       if (userSymptoms.trim() === '' && !file) {
         alert('Please enter your symptoms or upload a file');
         return;
       }
-  
+      var fileInfoElement = document.getElementById('fileInfo');
+    if (file) {
+      fileInfoElement.textContent = 'Selected file: ' + file.name;
+    }
+      // Make a fetch request to the backend for diagnosis
       fetch('/diagnose', {
         method: 'POST',
         body: formData
@@ -195,39 +212,39 @@
           document.getElementById('recommendation').innerHTML = '';
           document.getElementById('alert').innerHTML = '';  // Clear previous alerts
           document.getElementById('appointmentButton').innerHTML = '';  // Clear previous appointment button
-  
+
           if (data.results) {
             data.results.forEach(function(item) {
               var symptom = item.symptom;
               var diagnosis = item.diagnosis;
               var recommendation = item.recommendation;
-  
+
               var diagnosisItem = document.createElement('li');
               diagnosisItem.textContent = diagnosis;
               document.getElementById('diagnosis').appendChild(diagnosisItem);
-  
+
               var recommendationItem = document.createElement('li');
               recommendationItem.textContent = recommendation;
               document.getElementById('recommendation').appendChild(recommendationItem);
             });
           }
-  
+
           var healthPercentage = data.health_percentage;
           document.getElementById('healthScore').textContent = 'Your Health Score is: ' + healthPercentage + '%';
-  
+
           // Display an alert if the health score is below 80
           if (healthPercentage < 80) {
             document.getElementById('alert').textContent = 'Warning: Your health score is low. Please visit a nearby hospital or consult a doctor immediately.';
             document.getElementById('alert').style.color = 'red';  // Make the alert text red
-  
+
             // Display appointment button
             var appointmentButton = document.createElement('a');
-            appointmentButton.href = '/make_appointment';
+            appointmentButton.href = data.appointment_link;
             appointmentButton.textContent = 'Get Appointment';
             appointmentButton.className = 'appointment-link';
             document.getElementById('appointmentButton').appendChild(appointmentButton);
           }
-  
+
           // Display extracted data from the image
           if (data.extracted_data) {
             document.getElementById('extractedData').textContent = 'Extracted Data:\n' + data.extracted_data;
@@ -239,14 +256,39 @@
           console.error('Error:', error);
         });
     });
-  
+
+    document.getElementById('predictPneumoniaButton').addEventListener('click', function(event) {
+    event.preventDefault();
+    var fileInput = document.getElementById('file2');
+    var file = fileInput.files[0];
+    var formData = new FormData();
+    formData.append('file', file);
+
+      // Do not send a request if no symptoms are entered and no file is uploaded
+      var fileInfoElement = document.getElementById('fileInfo');
+    if (file) {
+      fileInfoElement.textContent = 'Selected file: ' + file.name;
+    }
+      fetch('/predict_pneumonia', {
+        method: 'POST',
+        body: formData
+      })
+        .then(function(response) {
+          return response.json();
+        })
+        .then(function(data) {
+          alert('Pneumonia Prediction: ' + data.prediction);
+        })
+        .catch(function(error) {
+          console.error('Error:', error);
+        });
+    });
+
     document.getElementById('file').addEventListener('change', function() {
       var file = document.getElementById('file').files[0];
       var fileInfo = document.getElementById('fileInfo');
       if (file) {
         fileInfo.textContent = 'Selected file: ' + file.name;
-      } else {
-        fileInfo.textContent = '';
       }
     });
   </script>
