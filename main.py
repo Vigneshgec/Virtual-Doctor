@@ -1,46 +1,19 @@
 import numpy as np
 import pandas as pd
-import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Blueprint, Flask, render_template, request, jsonify, url_for
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 import cv2
 import pytesseract
-import spacy
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.models import load_model
 
 app = Flask(__name__)
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
-
-# Step 1: Data Collection and Preprocessing
-data = pd.read_csv("C:\\Users\\vigne\\OneDrive\\Desktop\\vignesh\\vd\\data1.csv")
-symptoms = data['Symptoms']
-diagnoses = data['Diagnoses']
-treatment_recommendations = data['Recommendation']
-severity_scores = data['severity']  # Added column for severity scores
-nlp = spacy.load('en_core_web_md')
-vectorizer = CountVectorizer()
-X = vectorizer.fit_transform(symptoms)
-y = np.array(diagnoses)
-
-# Step 2: Model Training
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-model = LogisticRegression()
-model.fit(X_train, y_train)
-
-# Step 3: Treatment Recommendations
-diagnosis_to_recommendation = dict(zip(diagnoses, treatment_recommendations))
-
-# Define severity scores for each diagnosis. The scores are on a scale of 1 to 10, with 10 being the most severe.
-diagnosis_to_severity = dict(zip(diagnoses, severity_scores))
-
-# Assign a health score to each symptom based on the severity of its predicted diagnosis
-def compute_health_percentage(severity):
-    health_percentage = 100 - severity
-    return max(0, health_percentage)
 
 # Perform text preprocessing on user symptoms
 def preprocess_text(text):
@@ -57,25 +30,6 @@ def preprocess_text(text):
     preprocessed_text = ' '.join(preprocessed_tokens)
 
     return preprocessed_text
-
-# Extract text from an image using OCR (Optical Character Recognition)
-def extract_text_from_image(image_path):
-    try:
-        # Read the image using OpenCV
-        image = cv2.imread(image_path)
-
-        # Convert the image to grayscale
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        # Apply image preprocessing (if required) using OpenCV (e.g., thresholding, noise removal)
-
-        # Perform text extraction using PyTesseract
-        extracted_text = pytesseract.image_to_string(gray, lang='eng')
-
-        return extracted_text.strip()
-    except Exception as e:
-        print("Error during text extraction:", str(e))
-        return None
 
 # Analyze the extracted text and identify relevant symptoms
 def analyze_extracted_text(text):
@@ -96,10 +50,64 @@ def analyze_extracted_text(text):
 
     return matched_symptom
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-@app.route('/diagnose', methods=['POST'])
+# Step 1: Data Collection and Preprocessing
+data = pd.read_csv("C:\\Users\\vigne\\OneDrive\\Desktop\\vignesh\\vd\\data1.csv")
+symptoms = data['Symptoms']
+diagnoses = data['Diagnoses']
+treatment_recommendations = data['Recommendation']
+severity_scores = data['severity']  # Added column for severity scores
+preprocessed_symptoms = [preprocess_text(symptom) for symptom in symptoms]
+vectorizer = CountVectorizer()
+X = vectorizer.fit_transform(preprocessed_symptoms)
+y = np.array(diagnoses)
+
+# Create a mapping of diagnoses to their severity scores
+diagnosis_to_severity = dict(zip(diagnoses, severity_scores))
+
+# Step 2: Model Training
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Step 3: Treatment Recommendations
+diagnosis_to_recommendation = dict(zip(diagnoses, treatment_recommendations))
+
+# Assign a health score to each symptom based on the severity of its predicted diagnosis
+def compute_health_percentage(severity):
+    health_percentage = 100 - severity
+    return max(0, health_percentage)
+
+# Extract text from an image using OCR (Optical Character Recognition)
+def extract_text_from_image(image_path, apply_thresholding=False):
+    try:
+        # Read the image using OpenCV
+        image = cv2.imread(image_path)
+
+        # Convert the image to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # Apply image preprocessing (if required) using OpenCV (e.g., thresholding, noise removal)
+        if apply_thresholding:
+            _, threshed = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            extracted_text = pytesseract.image_to_string(threshed, lang='eng')
+        else:
+            extracted_text = pytesseract.image_to_string(gray, lang='eng')
+
+        return extracted_text.strip()
+    except Exception as e:
+        print("Error during text extraction:", str(e))
+        return None
+
+# Load the model
+IMG_HEIGHT, IMG_WIDTH = 150, 150
+model1 = load_model("C:\\Users\\vigne\\OneDrive\\Desktop\\vignesh\\vd\\vdmaincode\\chest_xray_classification_model.h5")
+
+# Create separate blueprints for symptom diagnosis and pneumonia prediction
+symptom_diagnosis_bp = Blueprint('symptom_diagnosis', __name__)
+pneumonia_prediction_bp = Blueprint('pneumonia_prediction', __name__)
+
+# Move symptom diagnosis related code to the symptom_diagnosis blueprint
+@symptom_diagnosis_bp.route('/diagnose', methods=['POST'])
 def diagnose():
     user_symptoms = request.form['symptoms']
     user_symptoms = [s.strip() for s in user_symptoms.split(',') if s.strip()]
@@ -197,10 +205,69 @@ def diagnose():
             }
     return jsonify(response)
 
-@app.route('/make_appointment')
+# Move pneumonia prediction related code to the pneumonia_prediction blueprint
+@pneumonia_prediction_bp.route('/predict_pneumonia', methods=['POST'])
+def predict_pneumonia():
+    user_file = request.files.get('file')
+    
+    if not user_file:
+        return jsonify({'prediction': 'Error: No file uploaded'})
+
+    try:
+        # Save the uploaded image temporarily
+        image_path = "C:\\Users\\vigne\\OneDrive\\Desktop\\vignesh\\vd\\templates\\temp_image.png"
+        user_file.save(image_path)
+
+        # Load the new image for prediction
+        new_image = load_img(image_path, target_size=(IMG_HEIGHT, IMG_WIDTH))
+        new_image = img_to_array(new_image)
+        new_image = new_image / 255.0  # Rescale pixel values
+        new_image = np.expand_dims(new_image, 0)  # Reshape image to have a batch dimension
+
+        # Predict disease from new image
+        prediction = model1.predict(new_image)
+        predicted_class = 'Pneumonia' if prediction[0] > 0.5 else 'Normal'
+
+        return jsonify({'prediction': predicted_class})
+    except Exception as e:
+        print("Error during pneumonia prediction:", str(e))
+        return jsonify({'prediction': 'Error during pneumonia prediction'})
+
+# Route for the appointment page
+@symptom_diagnosis_bp.route('/make_appointment')
 def make_appointment():
     # Render the appointment page here
     return render_template('diagnosis.html')
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        if 'xray_image_file' in request.files:
+            # Pneumonia Prediction
+            user_xray_image = request.files['xray_image_file']
+            if user_xray_image:
+                # Save the uploaded image temporarily
+                image_path = "C:\\Users\\vigne\\OneDrive\\Desktop\\vignesh\\vd\\templates\\temp_image.png"
+                user_xray_image.save(image_path)
+
+                # Load the new image for prediction
+                new_image = load_img(image_path, target_size=(IMG_HEIGHT, IMG_WIDTH))
+                new_image = img_to_array(new_image)
+                new_image = new_image / 255.0  # Rescale pixel values
+                new_image = np.expand_dims(new_image, 0)  # Reshape image to have a batch dimension
+
+                # Predict pneumonia from the X-ray image
+                prediction = model1.predict(new_image)
+                predicted_class = 'Pneumonia' if prediction[0] > 0.5 else 'Normal'
+
+                response = {'prediction': predicted_class}
+                return jsonify(response)
+
+    return render_template('index.html')
+
+# Register the blueprints with the app
+app.register_blueprint(symptom_diagnosis_bp)
+app.register_blueprint(pneumonia_prediction_bp)
 
 if __name__ == '__main__':
     app.run(debug=True)
